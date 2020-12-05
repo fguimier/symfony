@@ -264,7 +264,6 @@ EOF
         $this->assertStringContainsString('stdClass   2', $tester->getDisplay(true));
     }
 
-
     public function testInvalidMessagesThrowsException()
     {
         $sentToFailureStamp = new SentToFailureTransportStamp('async');
