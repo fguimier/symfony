@@ -144,7 +144,7 @@ EOF
                 $countPerClass[\get_class($envelope->getMessage())] = 0;
             }
 
-            $countPerClass[\get_class($envelope->getMessage())]++;
+            ++$countPerClass[\get_class($envelope->getMessage())];
         }
 
         if (0 === \count($countPerClass)) {

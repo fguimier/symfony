@@ -261,7 +261,8 @@ EOF
 
         $tester = new CommandTester($command);
         $tester->execute(['--group' => 1]);
-        $this->assertStringContainsString('stdClass   2', $tester->getDisplay(true));}
+        $this->assertStringContainsString('stdClass   2', $tester->getDisplay(true));
+    }
 
 
     public function testInvalidMessagesThrowsException()
