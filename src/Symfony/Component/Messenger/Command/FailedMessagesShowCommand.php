@@ -38,7 +38,7 @@ class FailedMessagesShowCommand extends AbstractFailedMessagesCommand
             ->setDefinition([
                 new InputArgument('id', InputArgument::OPTIONAL, 'Specific message id to show'),
                 new InputOption('max', null, InputOption::VALUE_REQUIRED, 'Maximum number of messages to list', 50),
-                new InputOption('group', null, InputOption::VALUE_NONE, 'Group by message class'),
+                new InputOption('stats', null, InputOption::VALUE_NONE, 'Display the message count by class'),
                 new InputOption('class-filter', null, InputOption::VALUE_REQUIRED, 'Filter by a specific class name'),
             ])
             ->setDescription('Shows one or more messages from the failure transport')
@@ -70,7 +70,7 @@ EOF
         }
 
         if ($input->getOption('group')) {
-            $this->listMessagesPerClass($io);
+            $this->listMessagesPerClass($io, $input->getOption('max'));
         } elseif (null === $id = $input->getArgument('id')) {
             $this->listMessages($io, $input->getOption('max'), $input->getOption('class-filter'));
         } else {
@@ -88,6 +88,12 @@ EOF
 
         $rows = [];
         foreach ($envelopes as $envelope) {
+            $currentClassName = str_replace('\\', '', \get_class($envelope->getMessage()));
+
+            if ($classFilter && $classFilter !== $currentClassName) {
+                continue;
+            }
+
             /** @var RedeliveryStamp|null $lastRedeliveryStamp */
             $lastRedeliveryStamp = $envelope->last(RedeliveryStamp::class);
             /** @var ErrorDetailsStamp|null $lastErrorDetailsStamp */
@@ -102,18 +108,12 @@ EOF
                 $errorMessage = $lastRedeliveryStampWithException->getExceptionMessage();
             }
 
-            $currentClassName = str_replace('\\', '', \get_class($envelope->getMessage()));
-
-            if (!$classFilter || $classFilter === $currentClassName) {
-                $rows[] = [
-                    $this->getMessageId($envelope),
-                    $currentClassName,
-                    null === $lastRedeliveryStamp ? '' : $lastRedeliveryStamp->getRedeliveredAt()->format(
-                        'Y-m-d H:i:s'
-                    ),
-                    $errorMessage,
-                ];
-            }
+            $rows[] = [
+                $this->getMessageId($envelope),
+                $currentClassName,
+                null === $lastRedeliveryStamp ? '' : $lastRedeliveryStamp->getRedeliveredAt()->format('Y-m-d H:i:s'),
+                $errorMessage,
+            ];
         }
 
         if (0 === \count($rows)) {
@@ -131,20 +131,20 @@ EOF
         $io->comment('Run <comment>messenger:failed:show {id} -vv</comment> to see message details.');
     }
 
-    private function listMessagesPerClass(SymfonyStyle $io)
+    private function listMessagesPerClass(SymfonyStyle $io, int $max)
     {
         /** @var ListableReceiverInterface $receiver */
         $receiver = $this->getReceiver();
-        $envelopes = $receiver->all();
+        $envelopes = $receiver->all($max);
 
         $countPerClass = [];
 
         foreach ($envelopes as $envelope) {
             if (!isset($countPerClass[\get_class($envelope->getMessage())])) {
-                $countPerClass[\get_class($envelope->getMessage())] = 0;
+                $countPerClass[$c = \get_class($envelope->getMessage())] = [$c, 0];
             }
 
-            ++$countPerClass[\get_class($envelope->getMessage())];
+            ++$countPerClass[\get_class($envelope->getMessage())][1];
         }
 
         if (0 === \count($countPerClass)) {
@@ -152,13 +152,6 @@ EOF
 
             return;
         }
-
-        array_walk(
-            $countPerClass,
-            function (&$count, $class) {
-                $count = [$class, $count];
-            }
-        );
 
         $io->table(['Class', 'Count'], $countPerClass);
     }

@@ -260,7 +260,7 @@ EOF
         );
 
         $tester = new CommandTester($command);
-        $tester->execute(['--group' => 1]);
+        $tester->execute(['--stats' => 1]);
         $this->assertStringContainsString('stdClass   2', $tester->getDisplay(true));
     }
 
