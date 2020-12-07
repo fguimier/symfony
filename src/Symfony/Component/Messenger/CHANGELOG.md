@@ -5,7 +5,7 @@ CHANGELOG
 -----
 
  * `InMemoryTransport` can perform message serialization through dsn `in-memory://?serialize=true`.
- * Add the options `group` and `class-filter` to `FailedMessagesShowCommand`
+ * Add the options `stats` and `class-filter` to `FailedMessagesShowCommand`
 
 5.2.0
 -----
