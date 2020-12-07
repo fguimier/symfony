@@ -69,7 +69,7 @@ EOF
             throw new RuntimeException(sprintf('The "%s" receiver does not support listing or showing specific messages.', $this->getReceiverName()));
         }
 
-        if ($input->getOption('group')) {
+        if ($input->getOption('stats')) {
             $this->listMessagesPerClass($io, $input->getOption('max'));
         } elseif (null === $id = $input->getArgument('id')) {
             $this->listMessages($io, $input->getOption('max'), $input->getOption('class-filter'));
@@ -88,7 +88,7 @@ EOF
 
         $rows = [];
         foreach ($envelopes as $envelope) {
-            $currentClassName = str_replace('\\', '', \get_class($envelope->getMessage()));
+            $currentClassName = \get_class($envelope->getMessage());
 
             if ($classFilter && $classFilter !== $currentClassName) {
                 continue;
